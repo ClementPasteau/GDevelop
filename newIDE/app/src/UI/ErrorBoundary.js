@@ -17,6 +17,10 @@ import {
   getPlatformName,
   getSystemVersion,
   getUserAgent,
+  isMacLike,
+  isMobile,
+  isNativeMobileApp,
+  isWindows,
 } from '../Utils/Platform';
 import { ColumnStackLayout } from './Layout';
 import AlertMessage from './AlertMessage';
@@ -102,37 +106,40 @@ export const ErrorFallbackComponent = ({
           label={<Trans>Report the issue on GitHub</Trans>}
           primary
           onClick={() => {
-            const body = `
-=> Please write here a short description of when the error occurred and how to reproduce it.
+            const templateFile = '--bug-report.yml';
+            const title = 'Crash while using an editor';
+            const description =
+              error && error.stack
+                ? `${error.stack.slice(0, 600)}...`
+                : 'No error found';
+            const reproductionSteps = 'Fill me with the steps to reproduce';
+            const platform =
+              isWindows() || isMacLike()
+                ? 'Desktop'
+                : isMobile() || isNativeMobileApp()
+                ? 'Mobile'
+                : 'Web';
+            const gdevelopVersion = getIDEVersionWithHash();
+            const platformInfo = `System Version: ${getSystemVersion()}, Arch: ${getArch()}, User Agent: ${getUserAgent()}, Platform: ${getPlatformName()}`;
+            const additionalContext = componentStack
+              ? `${componentStack.slice(0, 600)}...`
+              : 'No component stack found';
 
-When you're ready, click on "Submit new issue". Don't change the rest of the message. Thanks!
-
-## Error stack (don't write anything here)
-\`\`\`
-${error && error.stack ? `${error.stack.slice(0, 600)}...` : 'No error found'}
-\`\`\`
-
-## Component stack (don't write anything here)
-\`\`\`
-${
-              componentStack
-                ? `${componentStack.slice(0, 600)}...`
-                : 'No component stack found'
-            }
-\`\`\`
-
-## Other details
-* IDE version: ${getIDEVersionWithHash()}
-* Arch: ${getArch()},
-* Platform Name: ${getPlatformName()},
-* System Version: ${getSystemVersion()},
-* User Agent: ${getUserAgent()},
-        `;
-            Window.openExternalURL(
-              `https://github.com/4ian/GDevelop/issues/new?body=${encodeURIComponent(
-                body
-              )}&title=Crash%20while%20using%20an%20editor`
+            const baseUrl = new URL(
+              'https://github.com/4ian/GDevelop/issues/new'
             );
+            baseUrl.searchParams.set('template', templateFile);
+            baseUrl.searchParams.set('title', title);
+            baseUrl.searchParams.set('labels', 'bug');
+            baseUrl.searchParams.set('searched_issues', 'true');
+            baseUrl.searchParams.set('description', description);
+            baseUrl.searchParams.set('reproduction_steps', reproductionSteps);
+            baseUrl.searchParams.set('platform', platform);
+            baseUrl.searchParams.set('gdevelop_version', gdevelopVersion);
+            baseUrl.searchParams.set('platform_info', platformInfo);
+            baseUrl.searchParams.set('additional_context', additionalContext);
+
+            Window.openExternalURL(baseUrl.href);
           }}
         />
       </Line>
